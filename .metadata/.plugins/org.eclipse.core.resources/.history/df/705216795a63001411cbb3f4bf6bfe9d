@@ -1,0 +1,51 @@
+package flowControl;
+
+
+import java.io.*;
+import java.net.*;
+import java.util.ArrayList;
+public class Server{
+	private static String[] lineArray;
+	
+	
+    public static void main(String args[]){
+    	lineArray = inputFile();
+    	System.out.println("Well shit");
+    		
+
+    }
+    public static void test(){
+    	byte[] sendBytes = new byte[1024];
+    	String s = "tada yip yip";
+    	System.out.println("sendBytes.length: " + sendBytes.length);
+    	sendBytes = s.getBytes();
+    	System.out.println("sendBytes.length: " + sendBytes.length);
+    	for(byte b: sendBytes){
+    		System.out.println(b + " " + Character.toString((char)b));
+    	}
+    	
+    }
+    public static String[] inputFile(){
+    	String file = "COSC635_2148_P2_DataSent.txt";
+    	ArrayList<String> arrayListLines = new ArrayList();
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line;
+	    	while((line = br.readLine()) != null){
+	    		arrayListLines.add(line);
+	    		System.out.println(line);
+	    	}
+	    	br.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return (String[]) (arrayListLines.toArray()); 
+
+    	
+    	
+    }
+}

@@ -1,0 +1,32 @@
+package flowControl;
+
+
+import java.io.*;
+import java.net.*;
+public class Server{
+    public static void main(String args[]){
+    	test();
+    		
+
+    }
+    public static void test(){
+    	byte[] sendBytes = new byte[1024];
+    	String s = "tada yip yip";
+    	System.out.println("sendBytes.length: " + sendBytes.length);
+    	sendBytes = s.getBytes();
+    	System.out.println("sendBytes.length: " + sendBytes.length);
+    	for(byte b: sendBytes){
+    		System.out.println(b + " " + Character.toString((char)b));
+    	}
+    	
+    }
+    public void inputFile(){
+    	BufferedReader br = new BufferedReader(new FileREader(file));
+    	String line;
+    	while((line == br.readLine()) != null){
+    		//proccess line
+    	}
+    	br.close();
+    	
+    }
+}

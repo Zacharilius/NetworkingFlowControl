@@ -1,0 +1,77 @@
+package flowControl;
+
+
+import java.io.*;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+public class Server{
+	private static String[] arrayLines;
+	private static int percentPacketLoss;
+	
+    public static void main(String args[]){
+    	//Set percent packet loss
+    	while(percentPacketLoss == 0){
+    		try{
+		    	Scanner sc = new Scanner(System.in);
+		    	System.out.println("Please enter an integer to specify packet loss");
+		    	percentPacketLoss = sc.nextInt();
+    		}
+    		catch(InputMismatchException e){
+    			System.out.println("You didn't enter an integer");
+    		}
+    	}
+    	
+    	inputFile();
+    	for(String s: arrayLines){
+    		System.out.println(s);
+    	}
+    	System.out.println("\n\n\nEnd");	
+
+    }
+    public static void test(){
+    	byte[] sendBytes = new byte[1024];
+    	String s = "tada yip yip";
+    	System.out.println("sendBytes.length: " + sendBytes.length);
+    	sendBytes = s.getBytes();
+    	System.out.println("sendBytes.length: " + sendBytes.length);
+    	for(byte b: sendBytes){
+    		System.out.println(b + " " + Character.toString((char)b));
+    	}
+    	
+    }
+    public static void inputFile(){
+    	String file = "COSC635_2148_P2_DataSent.txt";
+    	ArrayList<String> arrayListLines = new ArrayList();
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line;
+	    	while((line = br.readLine()) != null){
+	    		arrayListLines.add(line);
+	    	}
+	    	br.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		arrayLines = arrayListLines.toArray(new String[arrayListLines.size()]); 
+    }
+    public static void stopAndWait(){
+    	
+    	
+    }
+    public static void goBackN(){
+    	int windowSize = 8;
+    	int bufferSize = 1024;
+    	
+    	
+    	
+    }
+    private static void numberGen(){
+    	
+    }
+}
