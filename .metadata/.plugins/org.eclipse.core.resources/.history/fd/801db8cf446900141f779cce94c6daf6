@@ -112,8 +112,7 @@ public class Server {
 		  timer.schedule(new Timeout(), timeout);
 		}
 		nextSeqNum++;
-	  } 
-	 else {
+	  } else {
 		ackPacket = new DatagramPacket(ackArray, ackArray.length);
 		ackSocket.receive(ackPacket);
 		currentAck = Packet.getPacketFromBytes(ackPacket.getData());
@@ -137,7 +136,7 @@ public class Server {
 	  }
     }
 
-	// Send last packet
+	// Send EOT packet
 	currentData = Packet.createLastPacket(nextSeqNum);
 	currentArray = currentData.getBytesFromPacket();
 	dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, receiverPort);
