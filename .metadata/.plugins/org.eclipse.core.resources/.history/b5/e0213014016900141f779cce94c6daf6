@@ -1,0 +1,73 @@
+package flowControl;
+
+import java.nio.ByteBuffer;
+
+public class Packet {
+	
+	private final int maxmessageLength = 500;
+	private final int FRAME_SIZE_MODULO = 32;
+	private int type;
+	private int seqnum;
+	private String message;
+	
+	public static Packet createLastPacket(int SeqNum) throws Exception {
+		return new Packet(2, SeqNum, new String());
+	}
+	
+	public static Packet createACK(int SeqNum) throws Exception {
+		return new Packet(0, SeqNum, new String());
+	}
+	
+	public static Packet createPacket(int SeqNum, String message) throws Exception {
+		return new Packet(1, SeqNum, message);
+	}
+	
+		
+	
+	private Packet(int Type, int SeqNum, String message) throws Exception {
+		// Tests if inputed string is too large"
+		if (message.length() > maxmessageLength)
+			throw new Exception("message too large (max 500 chars)");
+			
+		type = Type;
+		seqnum = SeqNum % FRAME_SIZE_MODULO;
+		message = message;
+	}
+
+		
+	public int getType() {
+		return type;
+	}
+	
+	public int getSeqNum() {
+		return seqnum;
+	}
+	
+	public int getLength() {
+		return message.length();
+	}
+	
+	public byte[] getMessage() {
+		return message.getBytes();
+	}
+	
+	
+	public byte[] getBytesFromPacket() {
+		ByteBuffer buffer = ByteBuffer.allocate(512);
+		buffer.putInt(type);
+     buffer.putInt(seqnum);
+     buffer.putInt(message.length());
+     buffer.put(message.getBytes(),0,message.length());
+		return buffer.array();
+	}
+	
+	public static Packet getPacketFromBytes(byte[] UDPmessage) throws Exception {
+		ByteBuffer buffer = ByteBuffer.wrap(UDPmessage);
+		int type = buffer.getInt();
+		int seqnum = buffer.getInt();
+		int length = buffer.getInt();
+		byte message[] = new byte[length];
+		buffer.get(message, 0, length);
+		return new Packet(type, seqnum, new String(message));
+	}
+}
