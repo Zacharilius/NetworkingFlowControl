@@ -1,0 +1,73 @@
+package goBackN;
+
+import java.nio.ByteBuffer;
+
+public class Packet {
+	
+	private final short MAX_MESSAGE_LENGTH = 500;
+	private final short FRAME_SIZE_MODULO = 128;
+	private short packetType;
+	private short sequenceNumber;
+	private String message;
+	
+	
+	
+	public static Packet createACK(short sequenceNumber) throws Exception {
+		return new Packet((short)0, sequenceNumber, new String());
+	}
+	
+	public static Packet createPacket(short sequenceNumber, String message) throws Exception {
+		return new Packet((short)1, sequenceNumber, message);
+	}
+	
+	public static Packet createLastPacket(short sequenceNumber) throws Exception {
+		return new Packet((short)2, sequenceNumber, new String());
+	}	
+	
+	private Packet(short packetType, short sequenceNumber, String message) throws Exception {
+		// Tests if inputed string is too large"
+		if (message.length() > MAX_MESSAGE_LENGTH)
+			throw new Exception("message too large (max 500 chars)");
+			
+		this.packetType = packetType;
+		this.sequenceNumber = sequenceNumber % FRAME_SIZE_MODULO;
+		this.message = message;
+	}
+
+		
+	public short getPacketType() {
+		return packetType;
+	}
+	
+	public short getSequenceNumber() {
+		return sequenceNumber;
+	}
+	
+	public int getLength() {
+		return message.length();
+	}
+	
+	public byte[] getMessage() {
+		return message.getBytes();
+	}
+	
+	
+	public byte[] getBytesFromPacket() {
+		ByteBuffer buffer = ByteBuffer.allocate(512);
+		buffer.putShort(packetType);
+     buffer.putShort(sequenceNumber);
+     buffer.putShort(message.length());
+     buffer.put(message.getBytes(),0,message.length());
+		return buffer.array();
+	}
+	
+	public static Packet getPacketFromBytes(byte[] UDPmessage) throws Exception {
+		ByteBuffer buffer = ByteBuffer.wrap(UDPmessage);
+		int packetType = buffer.getInt();
+		int sequenceNumber = buffer.getInt();
+		int length = buffer.getInt();
+		byte message[] = new byte[length];
+		buffer.get(message, 0, length);
+		return new Packet(packetType, sequenceNumber, new String(message));
+	}
+}

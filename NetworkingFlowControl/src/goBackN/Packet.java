@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 public class Packet {
 	
 	private final int MAX_MESSAGE_LENGTH = 500;
-	private final int FRAME_SIZE_MODULO = 32;
+	private final int FRAME_SIZE_MODULO = 64;
 	private int packetType;
 	private int sequenceNumber;
 	private String message;
@@ -55,9 +55,9 @@ public class Packet {
 	public byte[] getBytesFromPacket() {
 		ByteBuffer buffer = ByteBuffer.allocate(512);
 		buffer.putInt(packetType);
-     buffer.putInt(sequenceNumber);
-     buffer.putInt(message.length());
-     buffer.put(message.getBytes(),0,message.length());
+		buffer.putInt(sequenceNumber);
+		buffer.putInt(message.length());
+		buffer.put(message.getBytes(),0,message.length());
 		return buffer.array();
 	}
 	

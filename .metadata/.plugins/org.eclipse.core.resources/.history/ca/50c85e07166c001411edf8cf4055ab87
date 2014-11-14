@@ -1,0 +1,217 @@
+package goBackN;
+
+
+import java.net.*;
+import java.util.*;
+import java.io.*;
+import java.text.*;
+
+public class Server {
+
+  private static final int window = 10;
+  private static final int timeout = 300;
+  private static final int maxCharMessage = 500;
+  private static final int modulo = 128;
+  private static int errorPercent;
+  private int packetsLost;
+  private int packetsSent;
+  private int base;
+  private int nextSeqNum;
+  private int realSeqNum;
+  private int receiverPort;
+  private int senderPort;
+  private DatagramSocket dataSocket;
+  private DatagramSocket ackSocket;
+  private InetAddress IPAddress;
+  private String fileName;
+  private List<String> data;
+  private Timer timer;
+  
+  public static void main(String args[]) throws Exception {
+    // Parse command line arguments	
+    String IP = args[0];
+	int receiverPort = Integer.parseInt(args[1]);
+	int senderPort = Integer.parseInt(args[2]);
+    String fileName = args[3];	
+	errorPercent = Integer.parseInt(args[4]);
+
+	new Server(IP, receiverPort, senderPort, fileName);
+  }
+  
+  public Server(String eHost, int ePort, int sPort, String fName) throws Exception {
+
+  	// Set data from command line args
+	IPAddress = InetAddress.getByName(eHost);
+	receiverPort = ePort;
+	senderPort = sPort;
+	fileName = fName;
+	
+  
+	// Create Sockets	
+	
+	try {
+	  dataSocket = new DatagramSocket();
+	} catch (NumberFormatException e) {
+	  e.printStackTrace();
+	  System.out.println("Error with dataport and number format");
+	}  catch (IOException e) {
+	  e.printStackTrace();
+	  System.out.println("IO exception in data connection");
+	}
+	
+	try {
+	  ackSocket = new DatagramSocket(senderPort);
+	} catch(NumberFormatException e) {
+	  e.printStackTrace();
+	  System.out.println("Error with ackport and number format");
+	} catch (IOException e) {
+	  e.printStackTrace();
+	  System.out.println("IO exception in ack connection");
+	}
+	
+	// Initialize go-back-n variables
+	base = 0;
+	nextSeqNum = 0;
+	timer = new Timer();
+	
+	// Create array containing data for each packet
+	data = readFileData(fileName);
+	send();
+  }
+  
+  private void send() throws Exception {
+	packetsLost = 0;
+	packetsSent = 0;
+	int maxPacket = data.size() - 1;
+	int lastSeqNum = 0;
+	int multiplier = 0;
+	DatagramPacket dataPacket;
+	DatagramPacket ackPacket;
+	byte[] ackArray = new byte[1024];
+	byte[] currentArray;
+	Packet currentData = null;
+	Packet currentAck = null;
+	
+	Random r = new Random(System.currentTimeMillis());
+	while(realSeqNum <= maxPacket) {
+	  
+	  //Random integer to simulate error rate.
+	 if(nextSeqNum < base + window && nextSeqNum <= maxPacket) {
+		if(r.nextInt(101) <= errorPercent){
+			currentData = Packet.createPacket(nextSeqNum+1, data.get(nextSeqNum));
+			packetsLost++;
+		}
+		else{
+			currentData = Packet.createPacket(nextSeqNum, data.get(nextSeqNum));
+			packetsSent++;
+		}
+		currentArray = currentData.getBytesFromPacket();
+		dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, receiverPort);
+		dataSocket.send(dataPacket);
+		if(base == nextSeqNum) {
+		  timer.schedule(new Timeout(), timeout);
+		}
+		nextSeqNum++;
+	  } 
+	 else {
+		ackPacket = new DatagramPacket(ackArray, ackArray.length);
+		ackSocket.receive(ackPacket);
+		currentAck = Packet.getPacketFromBytes(ackPacket.getData());
+		
+		// Convert seqNum from modulo 32
+		int newSeq = currentAck.getSequenceNumber();
+		if(newSeq < lastSeqNum) {
+		  multiplier++;
+		}
+		realSeqNum = newSeq + modulo*multiplier;
+		lastSeqNum = newSeq;
+		
+		// update base and timer
+		base = realSeqNum + 1;
+		if(base == nextSeqNum) {
+		  timer.cancel();
+		} else {
+		  timer.schedule(new Timeout(), timeout);
+		}
+		if(realSeqNum == maxPacket) break;
+	  }
+    }
+
+	// Send last packet
+	currentData = Packet.createLastPacket(nextSeqNum);
+	currentArray = currentData.getBytesFromPacket();
+	dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, receiverPort);
+	dataSocket.send(dataPacket);
+	
+	// Wait to receive EOT Ack
+	int lastAckdEOT;
+	while(true) {
+	    ackPacket = new DatagramPacket(ackArray, ackArray.length);
+	    ackSocket.receive(ackPacket);
+		lastAckdEOT = Packet.getPacketFromBytes(ackPacket.getData()).getSequenceNumber();
+		if(lastAckdEOT == ((maxPacket + 1)%modulo)) break;
+	}
+
+	// Close resources and exit
+	dataSocket.close();
+	ackSocket.close();
+	timer.cancel();
+	printStatistics();
+  }
+  private void printStatistics(){
+	System.out.println("GoBack-N Statistics: ");
+	System.out.println("\tError percent: " + errorPercent + "%");
+	System.out.println("\tPackets required: " + packetsSent);
+	System.out.println("\tPackets lost: " + packetsLost);
+	DecimalFormat df = new DecimalFormat("#.#");
+	System.out.println("\tActual error percent: " + df.format((100 * ((float)packetsLost)/((float)packetsSent))) + "%");
+	
+  }
+  private static List<String> readFileData(String fileName) throws Exception {
+    FileReader fr = new FileReader(fileName);
+    List<String> data = new ArrayList<String>();
+    char[] buf = new char[maxCharMessage];
+    int pos = 0;
+
+	// Read file and store up to maxCharMessage chars to be sent
+	try {
+      while(true) {
+        int read = fr.read(buf, pos, maxCharMessage - pos);
+        if (read == -1) {
+          if (pos > 0) {
+            data.add(new String(buf, 0, pos));
+		  }
+          break;
+        }
+        pos += read;
+        if (pos == maxCharMessage) {
+          data.add(new String(buf));
+          pos = 0;
+        }
+      }
+	} catch (IOException e) {
+	  e.printStackTrace();
+	  System.out.println("IO exception reading " + fileName);
+    } 
+    return data;
+  }
+  
+  class Timeout extends TimerTask {
+    public void run() {
+	  // Restart timer
+      timer.schedule(new Timeout(), timeout);
+	  
+	  // Resend all packets in window
+	  for(int i = base; i <= nextSeqNum - 1; i++) {
+	    try {
+	    	Packet packetObject = Packet.createPacket(i, data.get(i));
+		  byte[] currentArray = packetObject.getBytesFromPacket();
+		  DatagramPacket dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, receiverPort);
+		  dataSocket.send(dataPacket);
+	    } catch (Exception e) {
+		  // TODO
+		}
+	  }
+    }
+  }
+}

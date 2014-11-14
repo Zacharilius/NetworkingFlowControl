@@ -4,14 +4,14 @@ public class ServerClientTest {
 
 	public static void main(String[] args) {
 		try {
-			Client.main(new String[] {"localhost", "8887", "8888", "out.txt"});
+			Client.main(new String[] {"localhost", "1778", "1779", "out.txt"});
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		try {
-			Server.main(new String[] {"localhost", "8888", "8887", "COSC635_2148_P2_DataSent.txt", "25"});
+			Server.main(new String[] {"localhost", "1779", "1778", "COSC635_2148_P2_DataSent.txt", "25"});
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
