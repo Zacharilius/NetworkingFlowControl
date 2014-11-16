@@ -7,5 +7,6 @@
 <listEntry value="1"/>
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="goBackN.ServerClientTest"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="localhost 1778 1779 out.txt"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="NetworkingFlowControl"/>
 </launchConfiguration>

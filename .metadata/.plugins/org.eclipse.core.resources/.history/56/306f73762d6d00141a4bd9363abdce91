@@ -1,0 +1,65 @@
+package goBackN;
+
+import java.nio.ByteBuffer;
+
+public class Packet {
+	
+	private final int MAX_MESSAGE_LENGTH = 512;
+	private final int FRAME_SIZE_MODULO = 64;
+	private int packetType;
+	private int sequenceNumber;
+	private String message;
+	
+	
+	
+	public static Packet createACK(int sequenceNumber) throws Exception {
+		return new Packet(0, sequenceNumber, new String());
+	}
+	
+	public static Packet createPacket(int sequenceNumber, String message) throws Exception {
+		return new Packet(1, sequenceNumber, message);
+	}
+	
+	public static Packet createLastPacket(int sequenceNumber) throws Exception {
+		return new Packet(2, sequenceNumber, new String());
+	}	
+	
+	private Packet(int packetType, int sequenceNumber, String message) throws Exception {
+		// Tests if inputed string is too large"
+		if (message.length() > MAX_MESSAGE_LENGTH)
+			throw new Exception("message too large (max 500 chars)");
+			
+		this.packetType = packetType;
+		this.sequenceNumber = sequenceNumber % FRAME_SIZE_MODULO;
+		this.message = message;
+	}
+
+		
+	public int getPacketType() {
+		return packetType;
+	}
+	
+	public int getSequenceNumber() {
+		return sequenceNumber;
+	}
+	
+	public byte[] getMessage() {
+		return message.getBytes();
+	}
+	
+	public ByteBuffer getBufferFromPacket() {
+		ByteBuffer buffer = ByteBuffer.allocate(message.length() + 4);
+		buffer.putShort((short)packetType);
+		buffer.putShort((short)sequenceNumber);
+		buffer.put(message.getBytes());
+		return buffer;
+	}
+	
+	public static Packet getPacketFromBuffer(ByteBuffer buffer) throws Exception {
+		int packetType = buffer.getShort();
+		int sequenceNumber = buffer.getShort();
+		byte message[] = new byte[buffer.capacity() - 4];
+		buffer.get(message);
+		return new Packet(packetType, sequenceNumber, new String(message));
+	}
+}

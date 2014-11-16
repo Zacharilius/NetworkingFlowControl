@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 
 public class Packet {
 	
-	private final int MAX_MESSAGE_LENGTH = 500;
-	private final int FRAME_SIZE_MODULO = 64;
+	private final int MAX_MESSAGE_LENGTH = 508;
+	private final int FRAME_SIZE_MODULO = 2;
 	private int packetType;
 	private int sequenceNumber;
 	private String message;
@@ -27,7 +27,7 @@ public class Packet {
 	private Packet(int packetType, int sequenceNumber, String message) throws Exception {
 		// Tests if inputed string is too large"
 		if (message.length() > MAX_MESSAGE_LENGTH)
-			throw new Exception("message too large (max 500 chars)");
+			throw new Exception("Message size is: " + message.length() + "-" + MAX_MESSAGE_LENGTH);
 			
 		this.packetType = packetType;
 		this.sequenceNumber = sequenceNumber % FRAME_SIZE_MODULO;
@@ -43,31 +43,25 @@ public class Packet {
 		return sequenceNumber;
 	}
 	
-	public int getLength() {
-		return message.length();
-	}
-	
 	public byte[] getMessage() {
 		return message.getBytes();
 	}
 	
-	
-	public byte[] getBytesFromPacket() {
-		ByteBuffer buffer = ByteBuffer.allocate(512);
-		buffer.putInt(packetType);
-		buffer.putInt(sequenceNumber);
-		buffer.putInt(message.length());
-		buffer.put(message.getBytes(),0,message.length());
-		return buffer.array();
+	public ByteBuffer getBufferFromPacket() {
+		ByteBuffer buffer = ByteBuffer.allocate(message.length() + 4);
+		buffer.putShort((short)packetType);
+		buffer.putShort((short)sequenceNumber);
+		buffer.put(message.getBytes());
+		//buffer.flip();
+		return buffer;
 	}
 	
-	public static Packet getPacketFromBytes(byte[] UDPmessage) throws Exception {
-		ByteBuffer buffer = ByteBuffer.wrap(UDPmessage);
-		int packetType = buffer.getInt();
-		int sequenceNumber = buffer.getInt();
-		int length = buffer.getInt();
-		byte message[] = new byte[length];
-		buffer.get(message, 0, length);
+	public static Packet getPacketFromBuffer(byte[] b) throws Exception { //CHANGE TO BYTEBUFFER FOR DATAGRAMCHANNEL
+		ByteBuffer buffer = ByteBuffer.wrap(b);
+		int packetType = buffer.getShort();
+		int sequenceNumber = buffer.getShort();
+		byte message[] = new byte[buffer.capacity() - 4];
+		buffer.get(message);
 		return new Packet(packetType, sequenceNumber, new String(message));
 	}
 }

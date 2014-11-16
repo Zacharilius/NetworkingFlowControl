@@ -1,0 +1,25 @@
+package goBackN;
+
+import java.util.concurrent.TimeUnit;
+
+public class ServerClientTest {
+
+	public static void main(String[] args) throws InterruptedException {
+		try {
+			Client.main(new String[] {"localhost", "9002", "9003", "out.txt"});
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//TimeUnit.MILLISECONDS.sleep(1);
+		try {
+			Server.main(new String[] {"localhost", "9003", "9002", "COSC635_2148_P2_DataSent.txt", "25"});
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.print("Finished");
+
+	}
+
+}

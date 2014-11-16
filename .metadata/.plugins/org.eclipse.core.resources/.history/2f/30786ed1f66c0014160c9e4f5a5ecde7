@@ -1,0 +1,38 @@
+package goBackN;
+
+import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.DatagramChannel;
+import java.util.Date;
+
+public class Sample {
+
+	
+	
+	public static void main(String[] args) throws IOException {
+		ByteBuffer buffer = byteBufferTest();
+		
+		//System.out.println("Finish");
+	}
+	
+	public static ByteBuffer byteBufferTest(){
+		String message = "Yep yep yep...this is my message";
+		int a = 4;
+		int b = 3;
+		ByteBuffer buffer = ByteBuffer.allocate(message.length() + 4);
+		buffer.putShort((short)a);
+		buffer.putShort((short)b);
+		buffer.put(message.getBytes());
+		return buffer;
+	}
+	public static void byteBufferTest(ByteBuffer buffer){
+		System.out.println(buffer.toString());
+		int a = buffer.getShort();
+		int b = buffer.getShort();
+		System.out.println(buffer.toString());
+	}
+}

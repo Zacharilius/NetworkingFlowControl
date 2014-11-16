@@ -10,44 +10,62 @@ import java.nio.channels.DatagramChannel;
 import java.util.Date;
 
 public class Sample {
+	
+	public static void main(String[] args) throws IOException {
+		ByteBuffer buffer = byteBufferTest();
+		buffer.flip();
+		byteBufferTest(buffer);
+		System.out.println("Finish A");
+		
+		DatagramChannelTester();
+		System.out.println("Finish B");
+		
+	}
+	
+	public static void DatagramChannelTester(){
+		DatagramChannel channel;
+		try {
+			channel = DatagramChannel.open();
+			DatagramSocket socket = channel.socket();
+			SocketAddress address = new InetSocketAddress(9999);
+		    socket.bind(address);
+		    
+		    
+		    
+		    ByteBuffer buffer = ByteBuffer.allocateDirect(512);
+		    SocketAddress client = channel.receive(buffer);
+		    buffer.flip();
+		    channel.send(buffer, client);
+		    buffer.clear();
+		    
+		}
+	    catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static ByteBuffer byteBufferTest(){
+		String message = "Yep yep yep...this is my message";
+		System.out.println(message.length());
+		int a = 4;
+		int b = 3;
+		ByteBuffer buffer = ByteBuffer.allocate(message.length() + 4);
+		buffer.putShort((short)a);
+		buffer.putShort((short)b);
+		buffer.put(message.getBytes());
+		System.out.println(buffer.toString());
 
-  public static void main(String[] args) throws IOException {
-
-    DatagramChannel channel = DatagramChannel.open();
-    SocketAddress address = new InetSocketAddress(0);
-    DatagramSocket socket = channel.socket();
-    socket.bind(address);
-
-    
-    SocketAddress server = new InetSocketAddress("localhost", 37);
-    channel.connect(server);
-
-    ByteBuffer buffer = ByteBuffer.allocate(8);
-    buffer.order(ByteOrder.BIG_ENDIAN);
-    // send a byte of data to the server
-    buffer.put((byte) 0);
-    buffer.flip();
-    channel.write(buffer);
-
-
-    
-    // get the buffer ready to receive data
-    buffer.clear();
-    // fill the first four bytes with zeros
-    buffer.putInt(0);
-    channel.read(buffer);
-    buffer.flip();
-
-    System.out.println("Here");
-
-    
-    // convert seconds since 1900 to a java.util.Date
-    long secondsSince1900 = buffer.getLong();
-    long differenceBetweenEpochs = 2208988800L;
-    long secondsSince1970 = secondsSince1900 - differenceBetweenEpochs;
-    long msSince1970 = secondsSince1970 * 1000;
-    Date time = new Date(msSince1970);
-
-    System.out.println(time);
-  }
+		return buffer;
+	}
+	public static void byteBufferTest(ByteBuffer buffer){
+		System.out.println(buffer.capacity());
+		int a = buffer.getShort();
+		int b = buffer.getShort();
+		System.out.println(buffer.capacity());
+		byte[] byteArray = new byte[buffer.capacity() - 4];
+		buffer.get(byteArray);
+		String s = new String(byteArray);
+		System.out.println("a: " + a + " b: " + b + " message: " + s );
+	}
 }
