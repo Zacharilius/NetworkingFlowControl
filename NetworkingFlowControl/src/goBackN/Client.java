@@ -1,129 +1,129 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package goBackN;
 
+
 import java.net.* ;
-import java.lang.* ;
 import java.io.*;
-import java.nio.* ;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * Client class that receives packets from 
+ * @author zacharilius
+ */
 public class Client{
-
-	private static String hostname;
-	private static String ackport;
-	private static String dataport;
-	private static String filename;
-	private static String logfile;
-	private static int seqnum;
-	private static int window;
-	private static DatagramSocket acksocket;
-										private static DatagramSocket datasocket;
-	private static BufferedWriter fileout;
-	private static BufferedWriter logout;
+    private static final int ACK_PORT = 1779;
+    private static final int DATA_PORT = 1778;
+    private static final String FILE_NAME = "COSC635_2148_P2_DataRecieved.txt";
+    private static final int MAX_SEQ_MODULO = 128;
+    
+    private static InetAddress serverIP;
+    private static String logFile;
+    private static int sequenceNum;
+    private static DatagramSocket ackSocket;
+    private static DatagramSocket dataSocket;
+    private static BufferedWriter fileOut;
 	
- 	public static void main(String[] args) throws Exception {
-		//Assign variable names and set defaults
-		hostname = args[0];
-		ackport = args[1];
-		dataport = args[2];
-		filename = args[3];
-		logfile = "arrival.log";
-		seqnum = 0;	
-		window = 64;
-		
-		//Create file to be written to
-		try {
-			fileout = new BufferedWriter(new FileWriter(filename));
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("Exception found with creating Filename file \n");
-		};
-		
-		//Create log files 
-		try {
-			logout = new BufferedWriter(new FileWriter(logfile));
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("Exception found with creating log file \n");
-		};
+    public static void main(String[] args) {
+        System.out.println("Client starting: ");
+        //
+        String IP = args[0];
+        sequenceNum = 0;
 
+        //Get IP Address in InetAddress format.
+         try {
+            serverIP = InetAddress.getByName(IP);
+         } catch (UnknownHostException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Error: Creating InetAddress");
+        }
 
-		//Create Sockets to receive and send packets
-		try {
-			datasocket = new DatagramSocket(Integer.parseInt(dataport));
-			datasocket.setSoTimeout(5000);
-			
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-			System.out.println("Error with dataport and number format");
-		}  catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("IO exception in data aconnection");
-		}
-		
-		try {
-			acksocket = new DatagramSocket();
-			acksocket.setSoTimeout(5000);
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-			System.out.println("Error with ackport and number format");
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("IO exception in ack aconnection");
-		}
-		
-		byte[] currentarray;
-		DatagramPacket datapacket;
-		currentarray = new byte[512];
-		Packet currentpacket = null;
-		Packet ackpacket = null;
-		byte[] ackarray = null;
-		byte[] stringarray;
-		InetAddress address = InetAddress.getByName(hostname);
-		//inital loop
-		datapacket = new DatagramPacket(currentarray,currentarray.length);
-		System.out.println("Stuck1");
-		datasocket.receive(datapacket);
-		System.out.println("Stuck2");	
+        //Create file to be written to
+        try {
+            fileOut = new BufferedWriter(new FileWriter(FILE_NAME));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Error: Creation when creating ackSocket ");
+        };
 
-		
-//		currentpacket= Packet.getPacketFromBytes(datapacket.getData());
-    	ByteBuffer currentBuffer = ByteBuffer.wrap(datapacket.getData()); //added
-    	System.out.println(currentBuffer.capacity());
-    	currentpacket = Packet.getPacketFromBuffer(currentBuffer.array());
-		
-		//Loops until receive last packet value where == 2
-		while(currentpacket.getPacketType() != 2	) {
-			if(seqnum == currentpacket.getSequenceNumber() ){
-				System.out.println("Client REceived");
-				stringarray = currentpacket.getMessage();
-				fileout.write(new String(stringarray));
-				logout.write("Sequence number recieved:" + currentpacket.getSequenceNumber() +"\n");
-				System.out.println("Sequence number recieved:" + currentpacket.getSequenceNumber() +"\n");
-				ackpacket = Packet.createACK(seqnum);
-				seqnum++;
-//				ackarray = ackpacket.getBytesFromPacket();
-				ackarray = ackpacket.getBufferFromPacket().array();
-				acksocket.send(new DatagramPacket(ackarray,ackarray.length,address,Integer.parseInt(ackport)));				
-			}
-			
-			else{ 
-				System.out.println("Received out of order");
-				logout.write("Repeated:" + currentpacket.getSequenceNumber() +"\n");
-				System.out.println("Repeated:" + currentpacket.getSequenceNumber() +"\n");
-				if (ackpacket !=null){/*resend*/acksocket.send(new DatagramPacket(ackarray,ackarray.length,address,Integer.parseInt(ackport)));}	
-			}	
-			datapacket = new DatagramPacket(currentarray,currentarray.length);
-			datasocket.receive(datapacket);
-//			currentpacket= Packet.getPacketFromBytes(datapacket.getData());	
-	    	currentpacket = Packet.getPacketFromBuffer(datapacket.getData());
-		}
-		//The last packet has arrived then Save file and send ack
-		fileout.close();
-		logout.write("Last packet received");
-		System.out.println("Last packet received");
-		logout.close();
-		ackpacket = Packet.createLastPacket(seqnum);
-		acksocket.send(new DatagramPacket(ackpacket.getBufferFromPacket().array(),ackpacket.getBufferFromPacket().array().length,address,Integer.parseInt(ackport)));
-		acksocket.close();
-		datasocket.close();
+        //Create Sockets to receive and send packets
+        try {
+            dataSocket = new DatagramSocket(DATA_PORT);
+        }catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Error: Creating dataSocket");
+        }
+
+        try {
+            ackSocket = new DatagramSocket();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Error: Creating ackSocket");
+        }
+
+        try {
+            receive();
+        } catch (Exception ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Error: When calling receive()");
+        }
+    }
+    public static void receive() throws Exception{
+        DatagramPacket dataPacket;
+        Packet currPacket = null;
+        Packet ackPacket = null;
+        byte[] receiverArray = new byte[512];
+        byte[] ackArray = null;
+        byte[] stringArray = null;
+        
+
+        //Get first packet
+        dataPacket = new DatagramPacket(receiverArray,receiverArray.length);
+        System.out.println("Waiting to receive packets..");
+        dataSocket.receive(dataPacket);
+        currPacket= Packet.getPacketFromBytes(dataPacket.getData());
+        //Loop until receive last packet value where == 2
+        while(currPacket.getPacketType() != 2) {
+            if((sequenceNum % MAX_SEQ_MODULO) == currPacket.getSequenceNumber()){
+                stringArray = currPacket.getMessage();
+                System.out.println("stringArray.length: " + stringArray.length);
+                System.out.println(currPacket.getSequenceNumber() + ": " + new String(stringArray));
+                fileOut.write(new String(stringArray));
+                ackPacket = Packet.createACK(sequenceNum++);
+                ackArray = ackPacket.getBytesFromPacket();
+                System.out.println("Sending ACK:" + ackPacket.getSequenceNumber() +"\n");
+                ackSocket.send(new DatagramPacket(ackArray,ackArray.length,serverIP,ACK_PORT));				
+            }
+
+            else{ 
+                System.out.println("Repeated or waiting:" + currPacket.getSequenceNumber() +"\n");
+                if (ackPacket !=null){
+                    ackSocket.send(new DatagramPacket(ackArray,ackArray.length,serverIP,ACK_PORT));
+                }	
+            }
+            //Arrays.fill(receiverArray,(byte)0);
+            dataPacket = new DatagramPacket(receiverArray,receiverArray.length);
+            dataSocket.receive(dataPacket);
+            currPacket = Packet.getPacketFromBytes(dataPacket.getData());
+            System.out.println(currPacket.getSequenceNumber() + ": " + new String(currPacket.getBytesFromPacket()));
+            System.out.println(currPacket.getSequenceNumber() + ": " + currPacket.getBytesFromPacket().length);
+
+        }
+        stringArray = currPacket.getMessage();
+        System.out.println(new String(stringArray));
+        fileOut.write(new String(stringArray));
+        //The last packet has arrived then Save file and send ack
+        fileOut.close();
+        System.out.println("Last packet received");
+        ackPacket = Packet.createLastPacket(sequenceNum, new byte[0]);
+        ackSocket.send(new DatagramPacket(ackPacket.getBytesFromPacket(),ackPacket.getBytesFromPacket().length,serverIP,ACK_PORT));
+        fileOut.close();
+        ackSocket.close();
+        dataSocket.close();
     }
 }
