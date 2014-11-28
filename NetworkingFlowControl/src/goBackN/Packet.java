@@ -43,7 +43,7 @@ public class Packet {
         this.message = message;
     }
     public byte[] getBytesFromPacket() {
-        ByteBuffer buffer = ByteBuffer.allocate(512);
+        ByteBuffer buffer = ByteBuffer.allocate(message.length + 2);
         buffer.put((byte)packetType);
         buffer.put((byte)sequenceNumber);
 //        System.out.println("len: " + message.getBytes().length);

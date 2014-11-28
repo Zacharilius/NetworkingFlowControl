@@ -21,7 +21,7 @@ public class Server {
     private static final int ACK_PORT = 1779;
     private static final String FILE_NAME = "COSC635_2148_P2_DataSent.txt";
     private static final int WINDOW_SIZE = 10;
-    private static final int TIME_OUT = 300;
+    private static final int TIME_OUT = 1000;
     private static final int MAX_MESSAGE_BYTES = 510;
     private static final int MAX_SEQ_MODULO = 128;
     
@@ -36,7 +36,7 @@ public class Server {
     private DatagramSocket dataSocket;
     private DatagramSocket ackSocket;
     private InetAddress IPAddress;
-    private List<String> data;
+    private List<byte[]> data;
     private Timer timer;
   
     public static void main(String args[]) throws Exception {
@@ -98,14 +98,14 @@ public class Server {
 	 //Random integer to simulate error rate.
 	 if(nextSeqNum < base + WINDOW_SIZE && nextSeqNum <= maxPacket) {
             if((r.nextInt(100) < errorPercent) && notPacketError) {
-                currentData = Packet.createPacket(nextSeqNum+1, data.get(nextSeqNum).getBytes());
+                currentData = Packet.createPacket(nextSeqNum+1, data.get(nextSeqNum));
                 packetsSentError++;
                 packetsSentWindow += (base + WINDOW_SIZE) - nextSeqNum;
                 notPacketError = false;
                 System.out.println("Sending packet out of order#: " + nextSeqNum);
             }
             else{
-                    currentData = Packet.createPacket(nextSeqNum, data.get(nextSeqNum).getBytes());
+                    currentData = Packet.createPacket(nextSeqNum, data.get(nextSeqNum));
                     System.out.println("Sending packet#: " + nextSeqNum);
             }
             currentArray = currentData.getBytesFromPacket();
@@ -146,7 +146,7 @@ public class Server {
 
 	// Send last packet
         System.out.println("Sending last packet");
-	currentData = Packet.createLastPacket(nextSeqNum, data.get(nextSeqNum).getBytes());
+	currentData = Packet.createLastPacket(nextSeqNum, data.get(nextSeqNum));
 	currentArray = currentData.getBytesFromPacket();
 	dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);
         //System.out.println("Last: \n" + new String(dataPacket.getData()));
@@ -181,26 +181,47 @@ public class Server {
         System.out.println("\tError percent without thrown out packets: " + df.format((100 * ((double)packetsSentError)/((double)data.size()))) + "%");
   }
 
-  private static List<String> getFileInBytes() throws Exception {
+  private static List<byte[]> getFileInBytes() throws Exception {
         FileInputStream f = new FileInputStream(FILE_NAME);
         
-        List<String> packets = new ArrayList<String>();
+        List<byte[]> packets = new ArrayList<byte[]>();
         byte[] buffer = new byte[MAX_MESSAGE_BYTES];
         int remaining = buffer.length;                      
         int content;
         
         while((content = f.read(buffer, buffer.length - remaining, remaining)) != -1){
-            packets.add(new String(buffer));
+            packets.add(buffer);
             //System.out.print(new String(buffer));
-            remaining = buffer.length;
-            //System.out.println((remaining - (buffer.length - remaining)));
-            //buffer = new byte[remaining - (buffer.length - remaining)];
-            Arrays.fill(buffer,(byte)0);
+            //remaining = buffer.length;
+            System.out.println((remaining));
+            System.out.println((buffer.length - remaining));
+            buffer = new byte[remaining - (buffer.length - remaining)];
+            
+            //Arrays.fill(buffer,(byte)0);
         }
         f.close();
-      
       return packets;
   }
+   class Timeout extends TimerTask {
+    public void run() {
+	  // Restart timer
+      timer.schedule(new Timeout(), TIME_OUT);
+
+	  // Resend all packets in window
+	  for(int i = base; i <= nextSeqNum - 1; i++) {
+	    try {
+	      Packet packetObject = Packet.createPacket(i, data.get(i));
+		  byte[] currentArray = packetObject.getBytesFromPacket();
+		  DatagramPacket dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);
+		  dataSocket.send(dataPacket);
+                  System.out.println("Timer Sending: " + i);
+	    } catch (Exception e) {
+		  // TODO
+		}
+	  }
+    }
+  }
+  /*
   class Timeout extends TimerTask {
     public void run() {
 	  // Restart timer
@@ -219,7 +240,7 @@ public class Server {
                 }
                 else{
                     packetObject = Packet.createPacket(i, data.get(i).getBytes());
-                    System.out.println("Sending packet#: " + nextSeqNum);
+                    System.out.println("TT_Sending packet#: " + nextSeqNum);
                 }        
                 byte[] currentArray = packetObject.getBytesFromPacket();
                 DatagramPacket dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);
@@ -236,4 +257,5 @@ public class Server {
 	  }
     }
   }
+  */
 }

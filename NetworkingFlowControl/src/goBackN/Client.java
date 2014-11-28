@@ -91,8 +91,8 @@ public class Client{
         while(currPacket.getPacketType() != 2) {
             if((sequenceNum % MAX_SEQ_MODULO) == currPacket.getSequenceNumber()){
                 stringArray = currPacket.getMessage();
-                System.out.println("stringArray.length: " + stringArray.length);
-                System.out.println(currPacket.getSequenceNumber() + ": " + new String(stringArray));
+                //System.out.println("stringArray.length: " + stringArray.length);
+                //System.out.println(currPacket.getSequenceNumber() + ": " + new String(stringArray));
                 fileOut.write(new String(stringArray));
                 ackPacket = Packet.createACK(sequenceNum++);
                 ackArray = ackPacket.getBytesFromPacket();
