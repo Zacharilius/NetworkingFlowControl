@@ -1,91 +1,83 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package goBackN;
 
+
+// common packet class used by both SENDER and RECEIVER
+
 import java.nio.ByteBuffer;
-/**
- *
- * @author zacharilius
- */
+
 public class Packet {
-	
-    private final int MAX_MESSAGE_LENGTH = 510;
-    private final int MAX_SEQ_MODULO = 128;
-    
-    private  int packetType;
-    private  int sequenceNumber;
-    private  byte[] message;
-	
-	
-	
-    public static Packet createACK(int sequenceNumber) throws Exception {
-        return new Packet(0, sequenceNumber, new byte[0]);
-    }
 
-    public static Packet createPacket(int sequenceNumber, byte[] message) throws Exception {
-        return new Packet(1, sequenceNumber, message);
-    }
+	// constants
+	private final int maxDataLength = 500;
+	private final int SeqNumModulo = 128;
 
-    public static Packet createLastPacket(int sequenceNumber, byte[] message) throws Exception {
-        return new Packet(2, sequenceNumber, message);
-    }	
+	// data members
+	private int type;
+	private int seqnum;
+	private String data;
 
-    private Packet(int packetType, int sequenceNumber, byte[] message) throws Exception {
-        // Tests if inputed string is too large"
-        if (message.length > MAX_MESSAGE_LENGTH){
-                throw new Exception("Message > " + MAX_MESSAGE_LENGTH);
-        }
-        this.packetType = packetType;
-        this.sequenceNumber = sequenceNumber % MAX_SEQ_MODULO;
-        this.message = message;
-    }
-    public byte[] getBytesFromPacket() {
-        ByteBuffer buffer = ByteBuffer.allocate(message.length + 2);
-        buffer.put((byte)packetType);
-        buffer.put((byte)sequenceNumber);
-//        System.out.println("len: " + message.getBytes().length);
-        buffer.put(message);
+	//////////////////////// CONSTRUCTORS //////////////////////////////////////////
 
-        //buffer.put(message.getBytes(),0,message.length());
-     /*   
-        buffer.flip();
-        System.out.println("gBFP: " + message + "ZZZ");
-        buffer.get();
-        buffer.get();
-        byte test[] = new byte[message.length()];
-        buffer.get(test, 0, (message.length() - 2));
-        System.out.println("Yep: " + new String(test));
-        buffer.flip();
-        
-        buffer = ByteBuffer.allocate(getLength()+ 2);
-        buffer.put((byte)packetType);
-        buffer.put((byte)sequenceNumber);
-        buffer.put(message.getBytes(),0,message.length());
-*/
-        return buffer.array();
-    }
+	// hidden constructor to prevent creation of invalid packets
+	private Packet(int Type, int SeqNum, String strData) throws Exception {
+		// if data seqment larger than allowed, then throw exception
+		if (strData.length() > maxDataLength)
+			throw new Exception("data too large (max 500 chars)");
 
-    public static Packet getPacketFromBytes(byte[] UDPmessage) throws Exception {
-        ByteBuffer buffer = ByteBuffer.wrap(UDPmessage);
-        int packetType = buffer.get();
-        int sequenceNumber = buffer.get();
-        byte message[] = new byte[(UDPmessage.length - 2)];
-        buffer.get(message, 0, (UDPmessage.length - 2));
-        return new Packet(packetType, sequenceNumber, message);
-    }
+		type = Type;
+		seqnum = SeqNum % SeqNumModulo;
+		data = strData;
+	}
 
-    public int getPacketType() {
-        return packetType;
-    }
+	// special packet constructors to be used in place of hidden constructor
+	public static Packet createACK(int SeqNum) throws Exception {
+		return new Packet(0, SeqNum, new String());
+	}
 
-    public int getSequenceNumber() {
-        return sequenceNumber;
-    }
+	public static Packet createPacket(int SeqNum, String data) throws Exception {
+		return new Packet(1, SeqNum, data);
+	}
 
-    public byte[] getMessage() {
-        return message;
-    }
+	public static Packet createEOT(int SeqNum) throws Exception {
+		return new Packet(2, SeqNum, new String());
+	}
+
+	///////////////////////// PACKET DATA //////////////////////////////////////////
+
+	public int getType() {
+		return type;
+	}
+
+	public int getSeqNum() {
+		return seqnum;
+	}
+
+	public int getLength() {
+		return data.length();
+	}
+
+	public byte[] getData() {
+		return data.getBytes();
+	}
+
+	//////////////////////////// UDP HELPERS ///////////////////////////////////////
+
+	public byte[] getUDPdata() {
+		ByteBuffer buffer = ByteBuffer.allocate(512);
+		buffer.putInt(type);
+        buffer.putInt(seqnum);
+        buffer.putInt(data.length());
+        buffer.put(data.getBytes(),0,data.length());
+		return buffer.array();
+	}
+
+	public static Packet parseUDPdata(byte[] UDPdata) throws Exception {
+		ByteBuffer buffer = ByteBuffer.wrap(UDPdata);
+		int type = buffer.getInt();
+		int seqnum = buffer.getInt();
+		int length = buffer.getInt();
+		byte data[] = new byte[length];
+		buffer.get(data, 0, length);
+		return new Packet(type, seqnum, new String(data));
+	}
 }

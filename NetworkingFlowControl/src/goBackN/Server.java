@@ -19,7 +19,7 @@ public class Server {
     //final variables. 
     private static final int DATA_PORT = 1778;
     private static final int ACK_PORT = 1779;
-    private static final String FILE_NAME = "COSC635_2148_P2_DataSent.txt";
+    private static final String FILE_NAME = "COSC635_2148_P2_DataSent_Long.txt";
     private static final int WINDOW_SIZE = 10;
     private static final int TIME_OUT = 1000;
     private static final int MAX_MESSAGE_BYTES = 510;
@@ -88,8 +88,8 @@ public class Server {
 	DatagramPacket ackPacket;
 	byte[] ackArray = new byte[512];
 	byte[] currentArray;
-	Packet currentData = null;
-	Packet currentAck = null;
+	Packet2 currentData = null;
+	Packet2 currentAck = null;
 	
         
 	Random r = new Random(System.currentTimeMillis());
@@ -98,14 +98,14 @@ public class Server {
 	 //Random integer to simulate error rate.
 	 if(nextSeqNum < base + WINDOW_SIZE && nextSeqNum <= maxPacket) {
             if((r.nextInt(100) < errorPercent) && notPacketError) {
-                currentData = Packet.createPacket(nextSeqNum+1, data.get(nextSeqNum));
+                currentData = Packet2.createPacket(nextSeqNum+1, data.get(nextSeqNum));
                 packetsSentError++;
                 packetsSentWindow += (base + WINDOW_SIZE) - nextSeqNum;
                 notPacketError = false;
                 System.out.println("Sending packet out of order#: " + nextSeqNum);
             }
             else{
-                    currentData = Packet.createPacket(nextSeqNum, data.get(nextSeqNum));
+                    currentData = Packet2.createPacket(nextSeqNum, data.get(nextSeqNum));
                     System.out.println("Sending packet#: " + nextSeqNum);
             }
             currentArray = currentData.getBytesFromPacket();
@@ -120,7 +120,7 @@ public class Server {
             notPacketError = true;
             ackPacket = new DatagramPacket(ackArray, ackArray.length);
             ackSocket.receive(ackPacket);
-            currentAck = Packet.getPacketFromBytes(ackPacket.getData());
+            currentAck = Packet2.getPacketFromBytes(ackPacket.getData());
             System.out.println("Received ACK: " + currentAck.getSequenceNumber());
 
             // Convert seqNum from MAX_SEQ_MODULO 
@@ -146,7 +146,7 @@ public class Server {
 
 	// Send last packet
         System.out.println("Sending last packet");
-	currentData = Packet.createLastPacket(nextSeqNum, data.get(nextSeqNum));
+	currentData = Packet2.createLastPacket(nextSeqNum, data.get(nextSeqNum));
 	currentArray = currentData.getBytesFromPacket();
 	dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);
         //System.out.println("Last: \n" + new String(dataPacket.getData()));
@@ -157,7 +157,7 @@ public class Server {
 	while(true) {
 	    ackPacket = new DatagramPacket(ackArray, ackArray.length);
 	    ackSocket.receive(ackPacket);
-		lastAckPacket = Packet.getPacketFromBytes(ackPacket.getData()).getSequenceNumber();
+		lastAckPacket = Packet2.getPacketFromBytes(ackPacket.getData()).getSequenceNumber();
 		if(lastAckPacket == ((maxPacket + 1)%MAX_SEQ_MODULO)) {
                     System.out.println("Received last ACK");
                     break;
@@ -192,14 +192,13 @@ public class Server {
         while((content = f.read(buffer, buffer.length - remaining, remaining)) != -1){
             packets.add(buffer);
             //System.out.print(new String(buffer));
-            //remaining = buffer.length;
-            System.out.println((remaining));
-            System.out.println((buffer.length - remaining));
-            buffer = new byte[remaining - (buffer.length - remaining)];
-            
+            remaining = buffer.length;
+            //System.out.println((remaining - (buffer.length - remaining)));
+            buffer = new byte[MAX_MESSAGE_BYTES];
             //Arrays.fill(buffer,(byte)0);
         }
         f.close();
+      
       return packets;
   }
    class Timeout extends TimerTask {
@@ -210,7 +209,7 @@ public class Server {
 	  // Resend all packets in window
 	  for(int i = base; i <= nextSeqNum - 1; i++) {
 	    try {
-	      Packet packetObject = Packet.createPacket(i, data.get(i));
+	      Packet2 packetObject = Packet2.createPacket(i, data.get(i));
 		  byte[] currentArray = packetObject.getBytesFromPacket();
 		  DatagramPacket dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);
 		  dataSocket.send(dataPacket);
@@ -230,23 +229,23 @@ public class Server {
 	  // Resend all packets in WINDOW_SIZE
 	  for(int i = base; i <= nextSeqNum - 1; i++) {
 	    try {
-                Packet packetObject;
+                Packet2 packetObject;
                 if((r.nextInt(101) <= errorPercent) && notPacketError){
-                    packetObject = Packet.createPacket(i+1, data.get(i).getBytes());
+                    packetObject = Packet2.createPacket(i+1, data.get(i).getBytes());
                     packetsSentError++;
                     packetsSentWindow += (base + WINDOW_SIZE) - i;
                     notPacketError = false;
            
                 }
                 else{
-                    packetObject = Packet.createPacket(i, data.get(i).getBytes());
+                    packetObject = Packet2.createPacket(i, data.get(i).getBytes());
                     System.out.println("TT_Sending packet#: " + nextSeqNum);
                 }        
                 byte[] currentArray = packetObject.getBytesFromPacket();
                 DatagramPacket dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);
                 dataSocket.send(dataPacket);                
                 
-//                Packet packetObject = Packet.createPacket(i, data.get(i));
+//                Packet2 packetObject = Packet2.createPacket(i, data.get(i));
 //                byte[] currentArray = packetObject.getBytesFromPacket();
 //                System.out.println("Timeout resending: " + (int)(currentArray[1]));
 //                DatagramPacket dataPacket = new DatagramPacket(currentArray, currentArray.length, IPAddress, DATA_PORT);

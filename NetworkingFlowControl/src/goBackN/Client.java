@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class Client{
     private static final int ACK_PORT = 1779;
     private static final int DATA_PORT = 1778;
-    private static final String FILE_NAME = "COSC635_2148_P2_DataRecieved.txt";
+    private static final String FILE_NAME = "COSC635_2148_P2_DataReceived.txt";
     private static final int MAX_SEQ_MODULO = 128;
     
     private static InetAddress serverIP;
@@ -27,7 +27,8 @@ public class Client{
     private static int sequenceNum;
     private static DatagramSocket ackSocket;
     private static DatagramSocket dataSocket;
-    private static BufferedWriter fileOut;
+    //private static BufferedWriter fileOut;
+    private static FileOutputStream fileOut;
 	
     public static void main(String[] args) {
         System.out.println("Client starting: ");
@@ -45,10 +46,11 @@ public class Client{
 
         //Create file to be written to
         try {
-            fileOut = new BufferedWriter(new FileWriter(FILE_NAME));
+            fileOut = new FileOutputStream(new File(FILE_NAME));
+ //           fileOut = new BufferedWriter(new FileWriter(FILE_NAME));
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Error: Creation when creating ackSocket ");
+            System.out.println("Error: Creation File Writer");
         };
 
         //Create Sockets to receive and send packets
@@ -75,8 +77,8 @@ public class Client{
     }
     public static void receive() throws Exception{
         DatagramPacket dataPacket;
-        Packet currPacket = null;
-        Packet ackPacket = null;
+        Packet2 currPacket = null;
+        Packet2 ackPacket = null;
         byte[] receiverArray = new byte[512];
         byte[] ackArray = null;
         byte[] stringArray = null;
@@ -86,15 +88,16 @@ public class Client{
         dataPacket = new DatagramPacket(receiverArray,receiverArray.length);
         System.out.println("Waiting to receive packets..");
         dataSocket.receive(dataPacket);
-        currPacket= Packet.getPacketFromBytes(dataPacket.getData());
+        currPacket= Packet2.getPacketFromBytes(dataPacket.getData());
         //Loop until receive last packet value where == 2
         while(currPacket.getPacketType() != 2) {
             if((sequenceNum % MAX_SEQ_MODULO) == currPacket.getSequenceNumber()){
                 stringArray = currPacket.getMessage();
                 //System.out.println("stringArray.length: " + stringArray.length);
                 //System.out.println(currPacket.getSequenceNumber() + ": " + new String(stringArray));
-                fileOut.write(new String(stringArray));
-                ackPacket = Packet.createACK(sequenceNum++);
+//                fileOut.write(new String(stringArray));
+                fileOut.write(stringArray);
+                ackPacket = Packet2.createACK(sequenceNum++);
                 ackArray = ackPacket.getBytesFromPacket();
                 System.out.println("Sending ACK:" + ackPacket.getSequenceNumber() +"\n");
                 ackSocket.send(new DatagramPacket(ackArray,ackArray.length,serverIP,ACK_PORT));				
@@ -109,18 +112,19 @@ public class Client{
             //Arrays.fill(receiverArray,(byte)0);
             dataPacket = new DatagramPacket(receiverArray,receiverArray.length);
             dataSocket.receive(dataPacket);
-            currPacket = Packet.getPacketFromBytes(dataPacket.getData());
+            currPacket = Packet2.getPacketFromBytes(dataPacket.getData());
             System.out.println(currPacket.getSequenceNumber() + ": " + new String(currPacket.getBytesFromPacket()));
             System.out.println(currPacket.getSequenceNumber() + ": " + currPacket.getBytesFromPacket().length);
 
         }
         stringArray = currPacket.getMessage();
         System.out.println(new String(stringArray));
-        fileOut.write(new String(stringArray));
+//        fileOut.write(new String(stringArray));
+        fileOut.write(stringArray);
         //The last packet has arrived then Save file and send ack
         fileOut.close();
         System.out.println("Last packet received");
-        ackPacket = Packet.createLastPacket(sequenceNum, new byte[0]);
+        ackPacket = Packet2.createLastPacket(sequenceNum, new byte[0]);
         ackSocket.send(new DatagramPacket(ackPacket.getBytesFromPacket(),ackPacket.getBytesFromPacket().length,serverIP,ACK_PORT));
         fileOut.close();
         ackSocket.close();
